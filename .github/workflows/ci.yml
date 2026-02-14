@@ -1,0 +1,38 @@
+name: GCN CI Pipeline
+
+# Trigger this workflow every time we push to the main branch
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-model:
+    runs-on: ubuntu-latest # A free cloud Linux server provided by GitHub
+
+    steps:
+    # Step 1: Download your code onto the GitHub server
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    # Step 2: Install Python
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip' # Caches dependencies to make future runs faster
+
+    # Step 3: Install the exact environment required to run the math
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        # We install the CPU version of PyTorch for CI to keep it fast and lightweight
+        pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+        pip install torch_geometric
+        pip install pytest
+
+    # Step 4: Run the test suite!
+    - name: Run Pytest
+      run: |
+        pytest tests/
