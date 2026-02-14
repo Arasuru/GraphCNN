@@ -17,8 +17,14 @@ class GraphData(BaseModel):
 #Initialize FastAPI app
 app = FastAPI(title="GCN Cora Servicing API")
 
+#global variable to hold the loaded model
+global model
+
 #choosing the latest model dynamically
+@app.on_event("startup")
 def load_latest_model():
+
+    global model
     mlflow.set_tracking_uri("http://localhost:5000")  # Assuming MLflow tracking server is running locally
 
     experiment = mlflow.get_experiment_by_name("GCN_Cora_Experiment")
@@ -33,12 +39,23 @@ def load_latest_model():
     model_uri = f"runs:/{run_id}/gcn_cora_model"
 
     print(f"Loading model from MLflow run ID: {run_id}")
-    return mlflow.pytorch.load_model(model_uri)
+    model = mlflow.pytorch.load_model(model_uri)
+    model.eval() # Set to evaluation mode (turns off dropout)
 
-# Load the model ONCE when the server starts
-model = load_latest_model()
-model.eval() # Set to evaluation mode (turns off dropout)
+# Health check endpoint
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "model_loaded": model is not None}
 
+@app.get("/model-info")
+def get_model_info():
+    if model is None:
+        raise HTTPException(status_code=404, detail="Model not loaded")
+    
+    return {
+        "model_type": type(model).__name__,
+        "architecture": str(model)
+    }
 
 # 4. The Prediction Endpoint
 @app.post("/predict")
