@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 
 
-class GCN(torch.nn.module):
+class GCN(torch.nn.Module):
 
     def __init__(self, num_features, hidden_channels, num_classes):
         super(GCN, self).__init__()
